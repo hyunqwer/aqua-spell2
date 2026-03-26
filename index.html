@@ -328,7 +328,7 @@ function beep(type){
     g.gain.setValueAtTime(conf.vol,now);
     g.gain.exponentialRampToValueAtTime(.001,now+conf.dur);
     o.start(now); o.stop(now+conf.dur);
-    // 레벨업은 화음 추가
+    
     if(type==='levelup'){
       conf.f.forEach((fr,i)=>{
         const o2=ac.createOscillator(),g2=ac.createGain();
@@ -536,7 +536,6 @@ function drawBG(){
   g.addColorStop(0,lv.bgT); g.addColorStop(.5,lv.bgM); g.addColorStop(1,lv.bgB);
   ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  // 빛 줄기 (레벨 1-3)
   if(pl.level<=3){
     const fade=(4-pl.level)/3;
     rays.forEach(r=>{
@@ -550,7 +549,6 @@ function drawBG(){
     });
   }
 
-  // 해초 (레벨 1-2)
   if(pl.level<=2){
     weeds.forEach(w=>{
       ctx.beginPath();
@@ -567,7 +565,6 @@ function drawBG(){
     });
   }
 
-  // 배경 버블
   bgBubs.forEach(b=>{
     b.y-=b.spd; b.wob+=.03; b.x+=Math.sin(b.wob)*.28;
     if(b.y<-15){b.y=canvas.height+8;b.x=Math.random()*canvas.width;}
@@ -577,7 +574,6 @@ function drawBG(){
     ctx.fillStyle=`rgba(255,255,255,${b.op*2})`; ctx.fill();
   });
 
-  // 배경 물고기
   bgFish.forEach(f=>{
     f.x+=f.spd;
     if(f.x>canvas.width+55)f.x=-55;
@@ -591,7 +587,6 @@ function drawBG(){
     ctx.restore();
   });
 
-  // 심해 별 (레벨 4-5)
   if(pl.level>=4){
     const cnt=pl.level===5?90:45;
     stars.slice(0,cnt).forEach(s=>{
@@ -599,7 +594,6 @@ function drawBG(){
       ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
       ctx.fillStyle=`rgba(255,255,255,${br*.38})`; ctx.fill();
     });
-    // 생물 발광 효과
     if(pl.level===5){
       for(let i=0;i<8;i++){
         const bx=(i*137.5+frameN*.3)%canvas.width;
@@ -612,7 +606,6 @@ function drawBG(){
     }
   }
 
-  // 바닥 어둠
   const floor=ctx.createLinearGradient(0,canvas.height-90,0,canvas.height);
   floor.addColorStop(0,'rgba(0,0,0,0)'); floor.addColorStop(1,'rgba(0,0,0,.55)');
   ctx.fillStyle=floor; ctx.fillRect(0,canvas.height-90,canvas.width,90);
@@ -644,7 +637,7 @@ function renderHearts(){
 }
 function flashHeart(){
   const hs=heartsRow.querySelectorAll('.hrt');
-  const idx=pl.hearts; // 방금 잃은 인덱스
+  const idx=pl.hearts; 
   if(hs[idx])hs[idx].classList.add('pop');
 }
 
@@ -729,7 +722,7 @@ function evolve(){
 }
 
 /* ══════════════════════════════════════════
-   스포너
+   스포너 및 충돌처리 (버그 수정됨)
 ══════════════════════════════════════════ */
 function spawnBubble(){
   if(!curWord)return;
@@ -782,9 +775,13 @@ function spawnParts(x,y,col,n=18){
   }
 }
 
+// 🔥 이곳이 수정된 충돌 감지 함수입니다.
 function collide(a,b,pad=0){
-  const dx=a.x-b.x,dy=a.y-b.y;
-  return Math.sqrt(dx*dx+dy*dy)<(a.sz/2+b.sz/2-pad);
+  const dx=a.x-b.x, dy=a.y-b.y;
+  // pl 객체는 size, 버블/포식자는 sz를 가지고 있으므로 둘 다 체크하여 값을 가져옵니다.
+  const aSize = a.sz !== undefined ? a.sz : a.size;
+  const bSize = b.sz !== undefined ? b.sz : b.size;
+  return Math.sqrt(dx*dx+dy*dy) < (aSize/2 + bSize/2 - pad);
 }
 
 /* ══════════════════════════════════════════
@@ -846,7 +843,6 @@ function loop(){
   ctx.translate(pl.x, pl.y + Math.sin(pl.wob) * 2.2);
   ctx.scale(pl.dir, 1);
 
-  // 상호작용에 따른 감정 변화 시스템
   let currentEmoji = pl.emoji;
   let nearPred = preds.some(p => Math.hypot(pl.x - p.x, pl.y - p.y) < 160); 
 
@@ -860,14 +856,12 @@ function loop(){
     currentEmoji = '😰'; 
   }
 
-  // 투명해지는(alpha) 대신 색상을 변화시켜 캐릭터 위치 확보
   if (pl.invT > 0 && Math.floor(frameN / 5) % 2 === 0) {
     ctx.filter = 'hue-rotate(320deg) saturate(300%) brightness(1.2)';
   } else if (pl.inkT > 0) {
     ctx.filter = 'grayscale(30%) brightness(0.9)';
   }
 
-  // 실드 효과
   if (pl.shieldT > 0) {
     const sa = .28 + Math.sin(frameN * .1) * .13;
     ctx.beginPath(); ctx.arc(0, 0, pl.size * .92, 0, Math.PI * 2);
@@ -875,7 +869,6 @@ function loop(){
     ctx.strokeStyle = 'rgba(160,245,255,.82)'; ctx.lineWidth = 2.5; ctx.stroke();
   }
 
-  // 캐릭터가 배경에 묻히지 않도록 하얀색 아우라 추가
   ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
   ctx.shadowBlur = 12;
 
@@ -893,7 +886,7 @@ function loop(){
     ctx.scale(pl.dir, 1);
     ctx.font = `${pl.size * 0.5}px Arial`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🦐', 0, 0); // 3콤보: 새우 펫
+    ctx.fillText('🦐', 0, 0); 
     ctx.restore();
   }
   
@@ -904,7 +897,7 @@ function loop(){
     ctx.scale(pl.dir, 1);
     ctx.font = `${pl.size * 0.5}px Arial`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🌟', 0, 0); // 5콤보: 불가사리 펫 추가
+    ctx.fillText('🌟', 0, 0); 
     ctx.restore();
   }
 
@@ -919,7 +912,7 @@ function loop(){
   if(frameN%Math.max(158-pl.level*27,65)===0)spawnPred();
   if(frameN%420===0)spawnItem();
 
-  /* ─── 버블 ─── */
+  /* ─── 버블 충돌 ─── */
   for(let i=bubbles.length-1;i>=0;i--){
     const b=bubbles[i];
     b.y-=b.spd;
@@ -929,11 +922,9 @@ function loop(){
 
     const pulse=Math.sin(b.ph)*1.8, r=b.r+pulse;
 
-    // 그림자
     ctx.beginPath(); ctx.arc(b.x+2,b.y+2,r+2,0,Math.PI*2);
     ctx.fillStyle='rgba(0,0,0,.14)'; ctx.fill();
 
-    // 버블 본체 (라디얼 그라데이션)
     const bg2=ctx.createRadialGradient(b.x-r*.28,b.y-r*.28,r*.08,b.x,b.y,r);
     bg2.addColorStop(0,'rgba(255,255,255,.52)');
     bg2.addColorStop(.45,'rgba(140,210,255,.22)');
@@ -941,14 +932,11 @@ function loop(){
     ctx.beginPath(); ctx.arc(b.x,b.y,r,0,Math.PI*2);
     ctx.fillStyle=bg2; ctx.fill();
 
-    // 테두리
     ctx.strokeStyle='rgba(255,255,255,.72)'; ctx.lineWidth=1.5; ctx.stroke();
 
-    // 반사 하이라이트
     ctx.beginPath(); ctx.arc(b.x-r*.32,b.y-r*.32,r*.18,0,Math.PI*2);
     ctx.fillStyle='rgba(255,255,255,.58)'; ctx.fill();
 
-    // 글자
     ctx.font=`bold ${r*1.12}px 'Fredoka One',Arial`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle='#fff';
@@ -956,7 +944,6 @@ function loop(){
     ctx.fillText(b.letter,b.x,b.y+1);
     ctx.shadowBlur=0;
 
-    // 충돌
     if(collide(pl,{x:b.x,y:b.y,sz:b.r*2},8)){
       if(b.ok){
         vibe([80]); combo++;
@@ -995,14 +982,12 @@ function loop(){
     p.trail.unshift({x:p.x,y:p.y});
     if(p.trail.length>7)p.trail.pop();
 
-    // 트레일
     p.trail.forEach((pt,ti)=>{
       const a=(1-ti/p.trail.length)*.14;
       ctx.beginPath(); ctx.arc(pt.x,pt.y,p.sz*.28*(1-ti/p.trail.length),0,Math.PI*2);
       ctx.fillStyle=`rgba(255,50,50,${a})`; ctx.fill();
     });
 
-    // 포식자 본체
     ctx.save();
     ctx.translate(p.x,p.y+Math.sin(frameN*.04+i)*3);
     ctx.scale(p.dir,1);
@@ -1011,7 +996,6 @@ function loop(){
     ctx.fillText(p.em,0,0);
     ctx.restore();
 
-    // 근접 경고 (빨간 광환)
     const dx2=pl.x-p.x, dy2=pl.y-p.y;
     const dist=Math.sqrt(dx2*dx2+dy2*dy2);
     if(dist<160){
@@ -1073,6 +1057,17 @@ function loop(){
       flash('rgba(255,255,200,.22)',.2);
       items.splice(i,1);
     }
+  }
+
+  /* ─── 파티클 (조각 효과 복구) ─── */
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.14; p.life-=.034;
+    if(p.life<=0){parts.splice(i,1);continue;}
+    ctx.globalAlpha=p.life;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.sz*p.life,0,Math.PI*2);
+    ctx.fillStyle=p.col; ctx.fill();
+    ctx.globalAlpha=1;
   }
 
   animID=requestAnimationFrame(loop);
