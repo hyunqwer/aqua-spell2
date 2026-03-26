@@ -838,11 +838,14 @@ function loop(){
     ctx.fillStyle=`rgba(80,200,255,${a})`; ctx.fill();
   });
 
-  /* ─── 플레이어 그리기 (감정 시스템 및 시인성 강화) ─── */
+
+
+/* ─── 플레이어 그리기 (감정 시스템 및 렌더링 버그 수정) ─── */
   ctx.save();
   ctx.translate(pl.x, pl.y + Math.sin(pl.wob) * 2.2);
   ctx.scale(pl.dir, 1);
 
+  // 상호작용에 따른 감정 변화 시스템
   let currentEmoji = pl.emoji;
   let nearPred = preds.some(p => Math.hypot(pl.x - p.x, pl.y - p.y) < 160); 
 
@@ -856,12 +859,14 @@ function loop(){
     currentEmoji = '😰'; 
   }
 
+  // 브라우저 렌더링 버그를 방지하기 위해 필터 대신 투명도(Alpha)로 효과 대체
   if (pl.invT > 0 && Math.floor(frameN / 5) % 2 === 0) {
-    ctx.filter = 'hue-rotate(320deg) saturate(300%) brightness(1.2)';
+    ctx.globalAlpha = 0.4; // 피격 시 깜빡임
   } else if (pl.inkT > 0) {
-    ctx.filter = 'grayscale(30%) brightness(0.9)';
+    ctx.globalAlpha = 0.6; // 오답 시 반투명
   }
 
+  // 실드 효과
   if (pl.shieldT > 0) {
     const sa = .28 + Math.sin(frameN * .1) * .13;
     ctx.beginPath(); ctx.arc(0, 0, pl.size * .92, 0, Math.PI * 2);
@@ -869,10 +874,9 @@ function loop(){
     ctx.strokeStyle = 'rgba(160,245,255,.82)'; ctx.lineWidth = 2.5; ctx.stroke();
   }
 
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
-  ctx.shadowBlur = 12;
-
-  ctx.font = `${pl.size}px Arial`;
+  // 이모지가 모든 기기에서 확실히 보이도록 폰트 최적화 및 그림자 효과 제거
+  ctx.shadowBlur = 0; 
+  ctx.font = `${pl.size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial`;
   ctx.textAlign = 'center'; 
   ctx.textBaseline = 'middle';
   ctx.fillText(currentEmoji, 0, 0);
