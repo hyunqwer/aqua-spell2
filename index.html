@@ -20,15 +20,15 @@
       background:linear-gradient(to bottom,rgba(0,15,50,.82) 0%,transparent 100%);
     }
 
-    /* 왼쪽 */
     .hud-left{display:flex;flex-direction:column;gap:5px;}
     .hearts-row{display:flex;gap:3px;}
     .hrt{
       font-size:clamp(18px,4vw,28px);
+      color:#ff3355; /* 하트 색상 강제 지정 */
       filter:drop-shadow(0 0 6px #ff3355);
       transition:transform .3s,filter .3s;
     }
-    .hrt.lost{filter:grayscale(1) opacity(.35);}
+    .hrt.lost{filter:grayscale(1) opacity(.35); color:#555;}
     .hrt.pop{animation:hrtPop .35s ease;}
     @keyframes hrtPop{0%{transform:scale(1)}50%{transform:scale(1.55)}100%{transform:scale(1)}}
 
@@ -39,7 +39,6 @@
     }
     .score-row .val{color:#ffd700;transition:all .15s;}
 
-    /* 중앙 */
     .hud-center{
       position:absolute;top:12px;left:50%;transform:translateX(-50%);
       display:flex;flex-direction:column;align-items:center;gap:6px;
@@ -69,7 +68,6 @@
     }
     @keyframes wordPop{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
 
-    /* 오른쪽 */
     .hud-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
     .level-chip{
       background:rgba(0,80,180,.45);
@@ -88,7 +86,6 @@
     }
     .evo-dot.on{background:#00d4ff;border-color:#00d4ff;box-shadow:0 0 8px #00d4ff;}
 
-    /* 콤보 */
     #comboEl{
       position:absolute;top:50%;right:18px;transform:translateY(-50%);
       font-size:clamp(18px,4.5vw,36px);color:#ff8c00;
@@ -99,7 +96,6 @@
     #comboEl.on{opacity:1;animation:comboPop .3s cubic-bezier(.34,1.56,.64,1);}
     @keyframes comboPop{from{transform:translateY(-50%) scale(.5)}to{transform:translateY(-50%) scale(1)}}
 
-    /* 메시지 */
     #msgEl{
       position:absolute;bottom:70px;left:50%;transform:translateX(-50%);
       font-size:clamp(18px,4.5vw,36px);white-space:nowrap;
@@ -113,7 +109,6 @@
       100%{opacity:0;transform:translateX(-50%) translateY(-28px)}
     }
 
-    /* 레벨업 오버레이 */
     #lvlUpEl{
       position:absolute;top:0;left:0;width:100%;height:100%;
       display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -136,7 +131,6 @@
       100%{opacity:0;transform:scale(.85) translateY(-36px)}
     }
 
-    /* 하단 진행 점 */
     #progressRow{
       position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
       display:flex;gap:5px;
@@ -150,7 +144,6 @@
     .pdot.cur{background:#ffd700;border-color:#ffd700;box-shadow:0 0 6px #ffd700;animation:pdotPulse 1s infinite;}
     @keyframes pdotPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
 
-    /* ── 오버레이 스크린 ──────────────────── */
     #overlayEl{
       position:absolute;top:0;left:0;width:100%;height:100%;
       display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -197,13 +190,11 @@
     #startBtn:hover{transform:scale(1.06);box-shadow:0 6px 30px rgba(0,150,255,.7);}
     #startBtn:active{transform:scale(.97);}
 
-    /* 플래시 */
     #flashEl{
       position:absolute;top:0;left:0;width:100%;height:100%;
       pointer-events:none;opacity:0;transition:opacity .1s;
     }
 
-    /* 화면 흔들림 */
     @keyframes shake{
       0%,100%{transform:translate(0,0)}
       10%{transform:translate(-8px,-3px)} 20%{transform:translate(8px,3px)}
@@ -213,7 +204,6 @@
     }
     body.shake{animation:shake .5s ease;}
 
-    /* 점수 팝업 */
     .spop{
       position:absolute;font-family:'Fredoka One',sans-serif;
       font-size:clamp(16px,3.5vw,28px);pointer-events:none;
@@ -416,6 +406,120 @@ const WORD_POOL={
 };
 
 /* ══════════════════════════════════════════
+   그래픽 그리기 엔진 (이모지 의존성 완벽 제거)
+══════════════════════════════════════════ */
+function drawChar(ctx, type, size, state) {
+  ctx.save();
+  let color = '#fff', bodyL = 1, bodyW = 0.6, tailC = '#fff', hasStripe = false;
+  let isEnemy = false;
+
+  // 레벨 및 몬스터 타입별 형태 정의
+  switch(type) {
+    case 1: color='#ff7b00'; bodyL=0.8; bodyW=0.55; tailC='#ff7b00'; hasStripe=true; break; // 니모
+    case 2: color='#2E8B57'; bodyL=0.7; bodyW=0.65; tailC='#1E5B37'; break; // 거북이
+    case 3: color='#1e40af'; bodyL=1.1; bodyW=0.4; tailC='#1e3a8a'; break; // 청새치
+    case 4: color='#0ea5e9'; bodyL=0.9; bodyW=0.5; tailC='#0284c7'; break; // 돌고래
+    case 5: color='#171717'; bodyL=1.0; bodyW=0.55; tailC='#000'; hasStripe=true; break; // 범고래
+    case 'shark': color='#475569'; bodyL=1.1; bodyW=0.5; tailC='#334155'; isEnemy=true; break;
+    case 'squid': color='#be185d'; bodyL=0.7; bodyW=0.5; tailC='#9d174d'; isEnemy=true; break;
+    case 'shrimp': color='#f97316'; bodyL=0.5; bodyW=0.3; tailC='#ea580c'; break; // 새우 펫
+  }
+
+  // 1. 꼬리 지느러미 (오징어는 촉수)
+  ctx.fillStyle = tailC;
+  ctx.beginPath();
+  if (type === 'squid') {
+    for(let i=-2; i<=2; i++) ctx.ellipse(-size*0.7, i*size*0.15, size*0.4, size*0.05, 0, 0, Math.PI*2);
+    ctx.fill();
+  } else {
+    ctx.moveTo(-size * bodyL * 0.5, 0);
+    ctx.lineTo(-size * bodyL * 1.3, -size * bodyW * 0.8);
+    ctx.lineTo(-size * bodyL * 1.3, size * bodyW * 0.8);
+    ctx.fill();
+  }
+
+  // 2. 상단 지느러미 (상어, 돌고래, 범고래)
+  if (type === 4 || type === 5 || type === 'shark') {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(size*0.2, -size*bodyW*0.8);
+    ctx.lineTo(-size*0.3, -size*bodyW*1.8);
+    ctx.lineTo(-size*0.4, -size*bodyW*0.8);
+    ctx.fill();
+  }
+
+  // 3. 몸통
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, size * bodyL, size * bodyW, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 4. 무늬 (니모 줄무늬, 범고래 얼룩)
+  if (hasStripe) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-size*bodyL*0.2, -size*bodyW*0.9, size*bodyL*0.3, size*bodyW*1.8);
+    if(type === 5) { 
+      ctx.beginPath(); ctx.ellipse(size*bodyL*0.5, -size*bodyW*0.3, size*0.2, size*0.1, 0, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  // 5. 흰자위
+  ctx.fillStyle = 'white';
+  ctx.beginPath();
+  let ex = size * bodyL * 0.5, ey = -size * bodyW * 0.3;
+  ctx.arc(ex, ey, size * 0.18, 0, Math.PI*2);
+  ctx.fill();
+
+  // 6. 눈동자 & 표정 변화
+  ctx.fillStyle = isEnemy ? '#ef4444' : 'black';
+  if (state === 'dead') {
+    ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(ex-4, ey-4); ctx.lineTo(ex+4, ey+4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex+4, ey-4); ctx.lineTo(ex-4, ey+4); ctx.stroke();
+  } else if (state === 'scared') {
+    ctx.beginPath(); ctx.arc(ex, ey, size * 0.06, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#60a5fa'; ctx.beginPath(); ctx.arc(ex-10, ey-10, 4, 0, Math.PI*2); ctx.fill(); // 땀방울
+  } else if (state === 'dizzy') {
+    ctx.beginPath(); ctx.arc(ex, ey, size * 0.1, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle='black'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(ex, ey, size*0.15, 0, Math.PI, true); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.arc(ex + size*0.06, ey, size * 0.08, 0, Math.PI*2); ctx.fill(); // 정상 눈
+  }
+
+  // 7. 입 & 이빨
+  if (!isEnemy && state !== 'dead') {
+    ctx.strokeStyle = 'black'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (state === 'dizzy') ctx.arc(ex, ey + size*0.3, size*0.1, 0, Math.PI*2);
+    else if (state === 'scared') ctx.arc(ex, ey + size*0.35, size*0.08, 0, Math.PI, true);
+    else ctx.arc(ex, ey + size*0.25, size*0.1, 0.2, Math.PI*0.8); // 미소
+    ctx.stroke();
+  } else if (isEnemy) {
+    ctx.fillStyle = 'white';
+    ctx.beginPath(); ctx.moveTo(ex, ey+size*0.3); ctx.lineTo(ex+size*0.2, ey+size*0.3); ctx.lineTo(ex+size*0.1, ey+size*0.4); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// 아이템 전용 (별, 하트)
+function drawStarItem(ctx, x, y, r, col) {
+  ctx.save(); ctx.translate(x,y); ctx.fillStyle=col; ctx.beginPath();
+  for(let i=0; i<5; i++){
+    ctx.lineTo(Math.cos((18+i*72)*Math.PI/180)*r, -Math.sin((18+i*72)*Math.PI/180)*r);
+    ctx.lineTo(Math.cos((54+i*72)*Math.PI/180)*(r*0.4), -Math.sin((54+i*72)*Math.PI/180)*(r*0.4));
+  }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+function drawHeartItem(ctx, x, y, size) {
+  ctx.save(); ctx.translate(x,y); ctx.fillStyle='#ff99cc'; ctx.beginPath();
+  ctx.arc(-size*.3, -size*.2, size*.3, 0, Math.PI*2);
+  ctx.arc(size*.3, -size*.2, size*.3, 0, Math.PI*2);
+  ctx.moveTo(-size*.58, -size*.1); ctx.lineTo(0, size*.6); ctx.lineTo(size*.58, -size*.1);
+  ctx.fill(); ctx.restore();
+}
+
+/* ══════════════════════════════════════════
    게임 상태
 ══════════════════════════════════════════ */
 let isPlaying=false, animID=null, frameN=0;
@@ -460,7 +564,7 @@ function startGame(){
     x:canvas.width/2, y:canvas.height/2,
     tx:canvas.width/2, ty:canvas.height/2,
     size:32, spd:0.07, spdMul:1,
-    emoji:'🐠', dir:1,
+    dir:1,
     hearts:3, score:0, level:1,
     invT:0, shieldT:0, inkT:0, wob:0,
   };
@@ -514,7 +618,6 @@ function initBG(){
     y:canvas.height*.12+Math.random()*canvas.height*.7,
     spd:(Math.random()*.55+.25)*(Math.random()<.5?1:-1),
     sz:Math.random()*10+8,
-    em:['🐡','🐟','🐠'][Math.floor(Math.random()*3)],
     op:.2+Math.random()*.3,
   });
 
@@ -582,8 +685,10 @@ function drawBG(){
     ctx.globalAlpha=f.op;
     ctx.translate(f.x,f.y+Math.sin(frameN*.02+f.x*.01)*3);
     ctx.scale(f.spd>0?1:-1,1);
-    ctx.font=`${f.sz}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(f.em,0,0);
+    // 배경 물고기도 직접 그리기
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(0, 0, f.sz, f.sz*0.6, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-f.sz*0.6, 0); ctx.lineTo(-f.sz*1.5, -f.sz*0.6); ctx.lineTo(-f.sz*1.5, f.sz*0.6); ctx.fill();
     ctx.restore();
   });
 
@@ -632,13 +737,9 @@ function renderHearts(){
   for(let i=0;i<5;i++){
     const s=document.createElement('span');
     s.className='hrt'+(i>=pl.hearts?' lost':'');
-    s.innerText='❤️'; heartsRow.appendChild(s);
+    s.innerHTML='&hearts;'; // 텍스트 이모지(❤️) 대신 유니코드(♥) 강제 사용
+    heartsRow.appendChild(s);
   }
-}
-function flashHeart(){
-  const hs=heartsRow.querySelectorAll('.hrt');
-  const idx=pl.hearts; 
-  if(hs[idx])hs[idx].classList.add('pop');
 }
 
 function renderEvo(){
@@ -706,7 +807,6 @@ function vibe(pat){if(navigator.vibrate)try{navigator.vibrate(pat);}catch(e){}}
 function evolve(){
   pl.level++;
   const lv=LEVELS[Math.min(pl.level,5)];
-  pl.emoji=lv.emoji;
   pl.spdMul=1+(pl.level-1)*.2;
   pl.size=30+(pl.level-1)*5;
 
@@ -722,7 +822,7 @@ function evolve(){
 }
 
 /* ══════════════════════════════════════════
-   스포너 및 충돌처리 (버그 수정됨)
+   스포너
 ══════════════════════════════════════════ */
 function spawnBubble(){
   if(!curWord)return;
@@ -750,9 +850,9 @@ function spawnPred(){
     x:side===-1?-sz:canvas.width+sz,
     y:Math.random()*(canvas.height-130)+65,
     sz,
+    type: pl.level>=3?'shark':(Math.random()<.6?'shark':'squid'), // 몬스터 종류 배정
     spd:(Math.random()*1.1+1.9+pl.level*.38)*-side,
     dir:side===-1?1:-1,
-    em:pl.level>=3?'🦈':(Math.random()<.6?'🦈':'🦑'),
     trail:[],
   });
 }
@@ -763,7 +863,6 @@ function spawnItem(){
     x:Math.random()*(canvas.width-90)+45,
     y:-55,sz:22,type,
     spd:Math.random()*1.1+.6,
-    em:type==='heal'?'🦪':'⭐',
     bob:Math.random()*Math.PI*2,
   });
 }
@@ -775,10 +874,8 @@ function spawnParts(x,y,col,n=18){
   }
 }
 
-// 🔥 이곳이 수정된 충돌 감지 함수입니다.
 function collide(a,b,pad=0){
   const dx=a.x-b.x, dy=a.y-b.y;
-  // pl 객체는 size, 버블/포식자는 sz를 가지고 있으므로 둘 다 체크하여 값을 가져옵니다.
   const aSize = a.sz !== undefined ? a.sz : a.size;
   const bSize = b.sz !== undefined ? b.sz : b.size;
   return Math.sqrt(dx*dx+dy*dy) < (aSize/2 + bSize/2 - pad);
@@ -818,7 +915,6 @@ function loop(){
   if(pl.shieldT>0)pl.shieldT--;
   if(pl.inkT>0)pl.inkT--;
 
-  /* ─── 배경 ─── */
   drawBG();
 
   /* ─── 플레이어 이동 ─── */
@@ -838,35 +934,20 @@ function loop(){
     ctx.fillStyle=`rgba(80,200,255,${a})`; ctx.fill();
   });
 
-
-
-/* ─── 플레이어 그리기 (감정 시스템 및 렌더링 버그 수정) ─── */
+  /* ─── 플레이어 그리기 (완벽 호환 그래픽 엔진) ─── */
   ctx.save();
   ctx.translate(pl.x, pl.y + Math.sin(pl.wob) * 2.2);
   ctx.scale(pl.dir, 1);
 
-  // 상호작용에 따른 감정 변화 시스템
-  let currentEmoji = pl.emoji;
   let nearPred = preds.some(p => Math.hypot(pl.x - p.x, pl.y - p.y) < 160); 
+  let pState = 'normal';
+  if (pl.hearts <= 0) pState = 'dead';
+  else if (pl.invT > 0 || pl.inkT > 0) pState = 'dizzy';
+  else if (nearPred && pl.level < 5) pState = 'scared';
 
-  if (pl.hearts <= 0) {
-    currentEmoji = '👻'; 
-  } else if (pl.invT > 0) {
-    currentEmoji = '😵'; 
-  } else if (pl.inkT > 0) {
-    currentEmoji = '🥴'; 
-  } else if (nearPred && pl.level < 5) {
-    currentEmoji = '😰'; 
-  }
+  if (pl.invT > 0 && Math.floor(frameN / 5) % 2 === 0) ctx.globalAlpha = 0.4;
+  else if (pl.inkT > 0) ctx.globalAlpha = 0.6;
 
-  // 브라우저 렌더링 버그를 방지하기 위해 필터 대신 투명도(Alpha)로 효과 대체
-  if (pl.invT > 0 && Math.floor(frameN / 5) % 2 === 0) {
-    ctx.globalAlpha = 0.4; // 피격 시 깜빡임
-  } else if (pl.inkT > 0) {
-    ctx.globalAlpha = 0.6; // 오답 시 반투명
-  }
-
-  // 실드 효과
   if (pl.shieldT > 0) {
     const sa = .28 + Math.sin(frameN * .1) * .13;
     ctx.beginPath(); ctx.arc(0, 0, pl.size * .92, 0, Math.PI * 2);
@@ -874,53 +955,55 @@ function loop(){
     ctx.strokeStyle = 'rgba(160,245,255,.82)'; ctx.lineWidth = 2.5; ctx.stroke();
   }
 
-  // 이모지가 모든 기기에서 확실히 보이도록 폰트 최적화 및 그림자 효과 제거
-  ctx.shadowBlur = 0; 
-  ctx.font = `${pl.size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Arial`;
-  ctx.textAlign = 'center'; 
-  ctx.textBaseline = 'middle';
-  ctx.fillText(currentEmoji, 0, 0);
+  // 이모지 대신 직접 만든 캐릭터 그리기 함수 호출!
+  drawChar(ctx, pl.level, pl.size, pState);
   ctx.restore();
 
-  /* ─── 콤보 펫 (Pet) 그리기 ─── */
+  /* ─── 콤보 펫 그리기 (직접 그리기 모드) ─── */
   if (combo >= 3 && trail.length > 6) {
     const p1 = trail[6];
-    ctx.save();
-    ctx.translate(p1.x, p1.y + Math.sin(frameN * .1) * 3);
-    ctx.scale(pl.dir, 1);
-    ctx.font = `${pl.size * 0.5}px Arial`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🦐', 0, 0); 
+    ctx.save(); ctx.translate(p1.x, p1.y + Math.sin(frameN * .1) * 3); ctx.scale(pl.dir, 1);
+    drawChar(ctx, 'shrimp', pl.size*0.5, 'normal');
     ctx.restore();
   }
   
   if (combo >= 5 && trail.length > 12) {
     const p2 = trail[12];
-    ctx.save();
-    ctx.translate(p2.x, p2.y + Math.sin(frameN * .1 + 1) * 3);
-    ctx.scale(pl.dir, 1);
-    ctx.font = `${pl.size * 0.5}px Arial`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🌟', 0, 0); 
+    ctx.save(); ctx.translate(p2.x, p2.y + Math.sin(frameN * .1 + 1) * 3); ctx.scale(pl.dir, 1);
+    drawStarItem(ctx, 0, 0, pl.size*0.4, '#ffd700');
     ctx.restore();
   }
 
-  /* ─── 커스텀 커서 (물방울) ─── */
+  /* ─── 커스텀 커서 ─── */
   ctx.beginPath(); ctx.arc(ptr.x,ptr.y,5,0,Math.PI*2);
   ctx.fillStyle='rgba(100,200,255,.6)'; ctx.fill();
   ctx.beginPath(); ctx.arc(ptr.x,ptr.y,11,0,Math.PI*2);
   ctx.strokeStyle='rgba(100,200,255,.3)'; ctx.lineWidth=2; ctx.stroke();
 
-  /* ─── 스포너 ─── */
   if(frameN%54===0)spawnBubble();
   if(frameN%Math.max(158-pl.level*27,65)===0)spawnPred();
   if(frameN%420===0)spawnItem();
 
-  /* ─── 버블 충돌 ─── */
+  /* ─── 버블 및 🧲 자석 효과 ─── */
   for(let i=bubbles.length-1;i>=0;i--){
     const b=bubbles[i];
-    b.y-=b.spd;
-    b.x+=Math.sin(b.wob+frameN*.04)*1.4;
+    
+    // 🔥 자석 효과 (초등학생 배려: 4콤보 이상이면 정답 버블이 알아서 끌려옵니다)
+    if(combo >= 4 && b.ok) {
+      const dx = pl.x - b.x, dy = pl.y - b.y;
+      const dist = Math.hypot(dx, dy);
+      if(dist < 320) {
+        b.x += dx * 0.05; b.y += dy * 0.05;
+        // 자석 연결선 이펙트
+        ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(pl.x, pl.y);
+        ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)'; ctx.lineWidth=2; ctx.stroke();
+      } else {
+        b.y -= b.spd; b.x += Math.sin(b.wob+frameN*.04)*1.4;
+      }
+    } else {
+      b.y -= b.spd; b.x += Math.sin(b.wob+frameN*.04)*1.4;
+    }
+    
     b.ph+=.05;
     if(b.y<-65){bubbles.splice(i,1);continue;}
 
@@ -995,9 +1078,8 @@ function loop(){
     ctx.save();
     ctx.translate(p.x,p.y+Math.sin(frameN*.04+i)*3);
     ctx.scale(p.dir,1);
-    ctx.font=`${p.sz}px Arial`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(p.em,0,0);
+    // 몬스터 직접 그리기 함수 호출
+    drawChar(ctx, p.type, p.sz, 'normal');
     ctx.restore();
 
     const dx2=pl.x-p.x, dy2=pl.y-p.y;
@@ -1039,13 +1121,9 @@ function loop(){
     it.y+=it.spd; it.bob+=.04;
     if(it.y>canvas.height+65){items.splice(i,1);continue;}
 
-    ctx.save();
-    ctx.shadowColor=it.type==='heal'?'#ff99cc':'#ffd700';
-    ctx.shadowBlur=16+Math.sin(it.bob)*5;
-    ctx.font=`${it.sz*1.9}px Arial`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(it.em,it.x,it.y+Math.sin(it.bob)*5);
-    ctx.restore();
+    // 아이템도 직접 그리기
+    if (it.type === 'heal') drawHeartItem(ctx, it.x, it.y+Math.sin(it.bob)*5, it.sz*0.6);
+    else drawStarItem(ctx, it.x, it.y+Math.sin(it.bob)*5, it.sz, '#ffd700');
 
     if(collide(pl,{x:it.x,y:it.y,sz:it.sz},0)){
       beep('item');
@@ -1063,7 +1141,6 @@ function loop(){
     }
   }
 
-  /* ─── 파티클 (조각 효과 복구) ─── */
   for(let i=parts.length-1;i>=0;i--){
     const p=parts[i];
     p.x+=p.vx; p.y+=p.vy; p.vy+=.14; p.life-=.034;
